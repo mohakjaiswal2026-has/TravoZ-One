@@ -20,6 +20,45 @@
     let currentUtterance = null;
     let voices = [];
 
+    //New--------------------------------------------------------------
+    let recognition;
+    let isRecording = false;
+
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  recognition = new SpeechRecognition();
+
+  recognition.continuous = false;
+  recognition.interimResults = false;
+  recognition.lang = 'en-US';
+
+  recognition.onstart = () => {
+    isRecording = true;
+    micButton.innerHTML = '<i class="fas fa-stop mr-2"></i> Listening...';
+    micButton.classList.add('bg-green-500');
+    micButton.classList.remove('bg-red-500');
+    updateStatus('loading', 'Listening...');
+  };
+
+  recognition.onresult = (event) => {
+    textInput.value = event.results[0][0].transcript;
+    updateCharCount();
+    validateInput();
+  };
+
+  recognition.onerror = (event) => {
+    showNotification('Mic error: ' + event.error, 'error');
+  };
+
+  recognition.onend = () => {
+    isRecording = false;
+    micButton.innerHTML = '<i class="fas fa-microphone mr-2"></i> Speak Now';
+    micButton.classList.add('bg-red-500');
+    micButton.classList.remove('bg-green-500');
+    updateStatus('ready', 'Ready to translate');
+  };
+}
+
     // Enhanced language support with flags and better names
     const languages = [
       { code: 'en', name: 'English', flag: '🇺🇸' },
@@ -150,6 +189,21 @@
       stopButton.addEventListener('click', handleStop);
       copyButton.addEventListener('click', handleCopy);
       clearButton.addEventListener('click', handleClear);
+
+      //new---------------------------------------------------------------------------
+      micButton.addEventListener('click', () => {
+  if (!recognition) {
+    showNotification('Speech Recognition not supported in this browser.', 'error');
+    return;
+  }
+
+  if (!isRecording) {
+    recognition.start();
+  } else {
+    recognition.stop();
+  }
+});
+
 
       // Voice loading - multiple approaches for better compatibility
       speechSynthesis.onvoiceschanged = loadVoices;
